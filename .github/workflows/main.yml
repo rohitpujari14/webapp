@@ -16,6 +16,10 @@ jobs:
       - name: Log in to AWS ECR
         id: ecr_login
         uses: aws-actions/amazon-ecr-login@v1
+        with:
+          aws-access-key-id: Rohit!@#$14
+          aws-secret-access-key: Rohit!@#$14
+          aws-region: ap-south-1
 
       - name: Build and push Docker image
         env:
@@ -24,10 +28,19 @@ jobs:
           IMAGE_TAG: sha256:0e898415b5835d6a033bff970a15aa6a448603b0ce2b20f94763eb3d22ccc730
         run: |
           # Build the Docker image
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 767397665060.dkr.ecr.ap-south-1.amazonaws.com/simple-web-app
+
+          
+          docker build -t simple-web-app .
+
+          docker tag simple-web-app:latest 767397665060.dkr.ecr.ap-south-1.amazonaws.com/simple-web-app:latest
+
+          
 
           # Push the Docker image to ECR
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push 767397665060.dkr.ecr.ap-south-1.amazonaws.com/simple-web-app:latest
+
 
   deploy:
     runs-on: ubuntu-latest
@@ -48,6 +61,10 @@ jobs:
           ECR_IMAGE: 767397665060.dkr.ecr.ap-south-1.amazonaws.com/simple-web-app/simple-web-app:sha256:0e898415b5835d6a033bff970a15aa6a448603b0ce2b20f94763eb3d22ccc730
         run: |
           aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment --query service.deployments[0].id
+          with:
+          aws-access-key-id: Rohit!@#$14
+          aws-secret-access-key: Rohit!@#$14
+          aws-region: ap-south-1
 
   test:
     runs-on: ubuntu-latest
