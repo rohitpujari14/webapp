@@ -1,0 +1,71 @@
+name: CI/CD Pipeline for AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Log in to AWS ECR
+        id: ecr_login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: 767397665060.dkr.ecr.ap-south-1.amazonaws.com/simple-web-app
+          ECR_REPOSITORY: simple-web-app
+          IMAGE_TAG: sha256:0e898415b5835d6a033bff970a15aa6a448603b0ce2b20f94763eb3d22ccc730
+        run: |
+          # Build the Docker image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+          # Push the Docker image to ECR
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: Rohit!@#$14
+          aws-secret-access-key: Rohit!@#$14
+          aws-region: ap-south-1
+
+      - name: Deploy to ECS
+        env:
+          CLUSTER_NAME: my-ecs-cluster
+          SERVICE_NAME: my-ecs-service
+          ECR_IMAGE: 767397665060.dkr.ecr.ap-south-1.amazonaws.com/simple-web-app/simple-web-app:sha256:0e898415b5835d6a033bff970a15aa6a448603b0ce2b20f94763eb3d22ccc730
+        run: |
+          aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment --query service.deployments[0].id
+
+  test:
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Run Integration Tests
+        run: |
+          # Write your integration test commands here
+          echo "Integration tests passed."
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [deploy, test]
+
+    steps:
+      - name: Rollback Deployment
+        run: |
+          # Add rollback commands to revert to the previous version
+          echo "Rollback triggered due to failure."
